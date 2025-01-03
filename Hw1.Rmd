@@ -8,7 +8,6 @@ output: html_notebook
 library(ggplot2)
 library(dplyr)
 
-
 # Load the dataset from the web
 location <- 'https://github.com/DACSS-Visual/tabular_univar_cat/raw/main/data/'
 file <- 'eduwa.rda'
@@ -19,37 +18,40 @@ load(file = url(link))
 
 # Filter and summarize the data
 eduwa_subset <- eduwa %>%
-  filter(Low.Grade == "PK" & High.Grade == "12")
+  filter(Low.Grade == "PK" & High.Grade == "12" & !is.na(LocaleType))
 
 # Create the summarized table
 tableFreq <- eduwa_subset %>%
   count(LocaleType, name = "Count") %>%
   mutate(Percent = (Count / sum(Count)) * 100)
 
-
-
-
-
 # Create the plot
 plot2 <- ggplot(data = tableFreq, aes(x = LocaleType, y = Count, fill = LocaleType)) +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", show.legend = FALSE) +  # Use bar chart, suppress legend
   labs(
-    title = "Distribution of Schools by Locale",
-    subtitle = "Subset: Schools Serving Grades PK to 12 in Washington",
-    x = "Locale",
-    y = "Number of Schools"
+    title = "Distribution of Schools by Locale",  # Title: Highlights purpose of visualization
+    subtitle = "Subset: Schools Serving Grades PK to 12 in Washington",  # Subtitle: Context for the audience
+    x = "Locale",  # X-axis label
+    y = "Number of Schools",  # Y-axis label
+    caption = "Source: Washington State Education Data, 2019"  # Acknowledging the data source
   ) +
   geom_text(aes(label = paste0(round(Percent, 2), "%")), 
-            vjust = -0.5, size = 4) +
-  scale_fill_brewer(palette = "Set2") +
-  theme_minimal()
-
-eduwa_subset <- eduwa %>%
-  filter(Low.Grade == "PK" & High.Grade == "12" & !is.na(LocaleType))
+            vjust = -0.5, size = 4) +  # Annotations to highlight percentages
+  scale_fill_brewer(palette = "Set2") +  # Color palette with strong contrasts
+  theme_minimal() +  # Minimal theme
+  theme(
+    panel.grid.major = element_line(color = "grey", size = 0.2),  # Include grid lines for readability
+    panel.grid.minor = element_blank(),  # Simplify by removing minor gridlines
+    panel.background = element_rect(fill = "white"),  # White background to keep focus on the bars
+    plot.background = element_rect(fill = "white"),  # Clean background for the plot
+    text = element_text(color = "black")  # All text in black for clarity
+  )
 
 # Print the plot
 print(plot2)
+
 # Save the final plot object as an RDS file
 saveRDS(plot2, file = "plot2.rds")
+
 ```
 
