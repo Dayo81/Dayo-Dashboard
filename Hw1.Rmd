@@ -25,26 +25,39 @@ tableFreq <- eduwa_subset %>%
   count(LocaleType, name = "Count") %>%
   mutate(Percent = (Count / sum(Count)) * 100)
 
+# Define a reduced color palette
+custom_colors <- c("City" = "#1b9e77", 
+                   "Rural" = "#d95f02", 
+                   "Suburb" = "#7570b3", 
+                   "Town" = "#e7298a",
+                   "NA" = "#66a61e")
+
 # Create the plot
 plot2 <- ggplot(data = tableFreq, aes(x = LocaleType, y = Count, fill = LocaleType)) +
   geom_bar(stat = "identity", show.legend = FALSE) +  # Use bar chart, suppress legend
   labs(
-    title = "Distribution of Schools by Locale",  # Title: Highlights purpose of visualization
-    subtitle = "Subset: Schools Serving Grades PK to 12 in Washington",  # Subtitle: Context for the audience
-    x = "Locale",  # X-axis label
-    y = "Number of Schools",  # Y-axis label
-    caption = "Source: Washington State Education Data, 2019"  # Acknowledging the data source
+    title = "Distribution of Schools by Locale",
+    subtitle = "Subset: Schools Serving Grades PK to 12 in Washington",
+    x = "Locale",
+    y = "Number of Schools",
+    caption = "Source: Washington State Education Data, 2019"
   ) +
   geom_text(aes(label = paste0(round(Percent, 2), "%")), 
-            vjust = -0.5, size = 4) +  # Annotations to highlight percentages
-  scale_fill_brewer(palette = "Set2") +  # Color palette with strong contrasts
+            vjust = -0.5, size = 4) +  # Annotations for percentages
+  scale_fill_manual(values = custom_colors) +  # Use custom colors
   theme_minimal() +  # Minimal theme
   theme(
-    panel.grid.major = element_line(color = "grey", size = 0.2),  # Include grid lines for readability
-    panel.grid.minor = element_blank(),  # Simplify by removing minor gridlines
-    panel.background = element_rect(fill = "white"),  # White background to keep focus on the bars
-    plot.background = element_rect(fill = "white"),  # Clean background for the plot
-    text = element_text(color = "black")  # All text in black for clarity
+    panel.grid.major = element_line(color = "grey", size = 0.2),
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = "white"),
+    plot.background = element_rect(fill = "white"),
+    text = element_text(color = "black")
+  ) +
+  annotate(
+    "text", 
+    x = 3, y = -2,  # Position below the plot
+    label = "Conclusion: Most schools are in City (33.33%) and Suburb (29.17%), while Rural and Town areas have fewer schools.",
+    size = 4, hjust = 0.5, color = "black"
   )
 
 # Print the plot
@@ -52,6 +65,7 @@ print(plot2)
 
 # Save the final plot object as an RDS file
 saveRDS(plot2, file = "plot2.rds")
+
 
 ```
 
