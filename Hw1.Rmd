@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+
+
+# Load the dataset from the web
+location <- 'https://github.com/DACSS-Visual/tabular_univar_cat/raw/main/data/'
+file <- 'eduwa.rda'
+link <- paste0(location, file)
+
+# Load the eduwa dataset
+load(file = url(link))
+
+# Filter and summarize the data
+eduwa_subset <- eduwa %>%
+  filter(Low.Grade == "PK" & High.Grade == "12")
+
+# Create the summarized table
+tableFreq <- eduwa_subset %>%
+  count(LocaleType, name = "Count") %>%
+  mutate(Percent = (Count / sum(Count)) * 100)
+
+
+
+
+
+# Create the plot
+plot2 <- ggplot(data = tableFreq, aes(x = LocaleType, y = Count, fill = LocaleType)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Distribution of Schools by Locale",
+    subtitle = "Subset: Schools Serving Grades PK to 12 in Washington",
+    x = "Locale",
+    y = "Number of Schools"
+  ) +
+  geom_text(aes(label = paste0(round(Percent, 2), "%")), 
+            vjust = -0.5, size = 4) +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal()
+
+eduwa_subset <- eduwa %>%
+  filter(Low.Grade == "PK" & High.Grade == "12" & !is.na(LocaleType))
+
+# Print the plot
+print(plot2)
+# Save the final plot object as an RDS file
+saveRDS(plot2, file = "plot2.rds")
+```
+
