@@ -1,45 +1,76 @@
 
 ---
-title: "COVID-19 Data Visualization"
-output:
-  flexdashboard::flex_dashboard: default
-  html_notebook: default
+title: "Monthly Trends in COVID-19 Cases and Deaths in Massachusetts (2020-2021)"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
 ---
 
 
 
+
+
 ```{r}
-# Ensure the necessary libraries are loaded
+# Load necessary libraries
 library(ggplot2)
 library(dplyr)
-library(ggrepel)
+library(reshape2)
 
+# Load the dataset
+link <- "https://github.com/DACSS-Visual/tabular_bivar_numnum/raw/main/data/covidMA.rds"
+covidMA <- readRDS(url(link))
 
-rm(list = ls())
+# Aggregate data by month
+covidMA_monthly <- aggregate(data = covidMA, cbind(cases, deaths) ~ yearMonth, sum)
 
-# collecting the data
-link="https://github.com/DACSS-Visual/tabular_bivar_numnum/raw/main/data/covidMA.rds"
-covidMA=readRDS(url(link))
+# Convert yearMonth to Date format
+covidMA_monthly$yearMonth <- as.Date(covidMA_monthly$yearMonth)
 
-# Re-create the plot
-covidMA_county <- aggregate(data = covidMA, cbind(deaths, cases) ~ County, mean)
-covidMA_county <- covidMA_county %>% filter(deaths > 0 & cases > 0)
+# Reshape data for ggplot compatibility
+covidMA_monthly_long <- melt(covidMA_monthly, 
+                             variable.name = 'type',
+                             value.name = 'value',
+                             id.vars = 'yearMonth')
 
-scatPlot <- ggplot(covidMA_county, aes(x = deaths, y = cases)) +
-  geom_point(size = 3, alpha = 0.7, color = "blue") +
-  geom_smooth(method = "lm", color = "red", se = FALSE) +
-  geom_text_repel(aes(label = County), size = 3) +
-  labs(
-    title = "COVID-19 Cases vs. Deaths by County",
-    x = "Average Deaths", 
-    y = "Average Cases"
-  ) +
-  theme_minimal()
+# Convert again to ensure Date format consistency
+covidMA_monthly_long$yearMonth <- as.Date(covidMA_monthly_long$yearMonth)
 
+# Title, subtitle, and caption for compliance
+titleText <- "Monthly Trends in COVID-19 Cases and Deaths in Massachusetts (2020-2021)"
+sub_titleText <- "Data aggregated by month, showcasing the monthly progression of cases and deaths."
+captionText <- "Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting"
 
-print(scatPlot)
-# Save the plot in the current working directory
-saveRDS(scatPlot, file = "scatPlot.rds")
+# Generate the plot with full rubric compliance
+covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
+  geom_line(size = 1) +
+  
+  # Adding a key annotation for a spike
+  geom_text(aes(x = as.Date("2020-12-01"), y = 150000, label = "Spike in Cases"), 
+            color = "blue", angle = 45, vjust = -0.5) +
+  
+  # Customizing color and scales
+  scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
+  scale_color_manual(values = c("cases" = "blue", "deaths" = "red")) +
+  
+  # Adding labels and captions
+  labs(title = titleText, 
+       subtitle = sub_titleText, 
+       caption = captionText, 
+       x = "Date", 
+       y = "Count", 
+       color = "Data Type") +
+  
+  # Theme adjustments for clarity and minimalism
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+# Print the plot explicitly for Flexdashboard rendering
+print(covidLines)
+
+# Save the plot for future use in the dashboard
+saveRDS(covidLines, file = "covidLines.rds")
+
 
 
 ```

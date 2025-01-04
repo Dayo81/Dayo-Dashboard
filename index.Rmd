@@ -27,7 +27,7 @@ Preparing the dashboard based on the instructions given at @magallanes_reyes_dat
 ### Worst histogram
 
 ```{r}
-readRDS("scatPlot.rds")
+readRDS("covidLines.rds")
 ```
 
 ### Worst scatterplot
