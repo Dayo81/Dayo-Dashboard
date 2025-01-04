@@ -20,14 +20,14 @@ Preparing the dashboard based on the instructions given at @magallanes_reyes_dat
 ### Worst barplot
 
 ```{r}
-readRDS("plot2.rds")
+#readRDS("plot2.rds")
 ```
 
 
 ### Worst histogram
 
 ```{r}
-#readRDS("scatPlot")
+readRDS("scatPlot.rds")
 ```
 
 ### Worst scatterplot
