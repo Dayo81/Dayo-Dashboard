@@ -27,7 +27,7 @@ readRDS("plot2.rds")
 ### Worst histogram
 
 ```{r}
-#readRDS("del2Draft.rds")
+#readRDS("scatPlot")
 ```
 
 ### Worst scatterplot
