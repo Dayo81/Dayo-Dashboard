@@ -1,7 +1,6 @@
 ---
-title: "Monthly Trends in COVID-19 Cases and Deaths in Massachusetts (2020-2021)"
-output: 
-  flexdashboard::flex_dashboard
+title: "R Notebook"
+output: html_notebook
 ---
 
 ```{r}

@@ -36,18 +36,26 @@ covidMA_monthly_long <- melt(covidMA_monthly,
 # Convert again to ensure Date format consistency
 covidMA_monthly_long$yearMonth <- as.Date(covidMA_monthly_long$yearMonth)
 
-# Title, subtitle, and caption for compliance
+# Identify the peak month for annotation
+peak_cases <- max(covidMA_monthly$cases)
+peak_date <- covidMA_monthly$yearMonth[which.max(covidMA_monthly$cases)]
+
+# Title, subtitle, and caption for rubric compliance
 titleText <- "Monthly Trends in COVID-19 Cases and Deaths in Massachusetts (2020-2021)"
 sub_titleText <- "Data aggregated by month, showcasing the monthly progression of cases and deaths."
 captionText <- "Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting"
 
-# Generate the plot with full rubric compliance
+# Generate the plot with the updated requirements
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
   
-  # Adding a key annotation for a spike
-  geom_text(aes(x = as.Date("2020-12-01"), y = 150000, label = "Spike in Cases"), 
-            color = "blue", angle = 45, vjust = -0.5) +
+  # Annotate the highest spike with exact count and date
+  geom_text(aes(x = peak_date, y = peak_cases, 
+                label = paste("Spike:", format(peak_cases, big.mark=","), "\nDate:", peak_date)), 
+            color = "blue", angle = 45, hjust = 0, vjust = -0.5) +
+
+  # Apply log transformation to y-axis
+  scale_y_log10(labels = scales::comma) + 
   
   # Customizing color and scales
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
@@ -58,7 +66,7 @@ covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color =
        subtitle = sub_titleText, 
        caption = captionText, 
        x = "Date", 
-       y = "Count", 
+       y = "Count (Log Scale)", 
        color = "Data Type") +
   
   # Theme adjustments for clarity and minimalism
