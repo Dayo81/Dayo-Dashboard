@@ -36,42 +36,37 @@ covidMA_monthly_long <- melt(covidMA_monthly,
 # Convert again to ensure Date format consistency
 covidMA_monthly_long$yearMonth <- as.Date(covidMA_monthly_long$yearMonth)
 
-# Identify the peak month for annotation
-peak_cases <- max(covidMA_monthly$cases)
-peak_date <- covidMA_monthly$yearMonth[which.max(covidMA_monthly$cases)]
-
-# Title, subtitle, and caption for rubric compliance
-titleText <- "Monthly Trends in COVID-19 Cases and Deaths in Massachusetts (2020-2021)"
-sub_titleText <- "Data aggregated by month, showcasing the monthly progression of cases and deaths."
+# Updated Title, Subtitle, and Caption
+titleText <- "How COVID-19 Cases Surged in Dec. 2020 While Deaths Declined in MA"
+sub_titleText <- "Data aggregated monthly (August 2020 to December 2021) for Massachusetts."
 captionText <- "Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting"
 
-# Generate the plot with the updated requirements
+# Generate the plot with adjusted spacing for title and caption
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
-  
-  # Annotate the highest spike with exact count and date
-  geom_text(aes(x = peak_date, y = peak_cases, 
-                label = paste("Spike:", format(peak_cases, big.mark=","), "\nDate:", peak_date)), 
-            color = "blue", angle = 45, hjust = 0, vjust = -0.5) +
 
-  # Apply log transformation to y-axis
+  # Log transformation applied to Y-axis
   scale_y_log10(labels = scales::comma) + 
   
   # Customizing color and scales
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_color_manual(values = c("cases" = "blue", "deaths" = "red")) +
   
-  # Adding labels and captions
+  # Adding labels and captions with spacing adjustments
   labs(title = titleText, 
        subtitle = sub_titleText, 
        caption = captionText, 
        x = "Date", 
        y = "Count (Log Scale)", 
        color = "Data Type") +
-  
-  # Theme adjustments for clarity and minimalism
+
+  # Adjusting theme for better title and caption spacing
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(
+    plot.title.position = "plot",  # Expands title spacing
+    plot.caption = element_text(hjust = 0, size = 10),  # Prevent caption cutoff
+    axis.text.x = element_text(angle = 90)
+  )
 
 # Print the plot explicitly for Flexdashboard rendering
 print(covidLines)
