@@ -21,13 +21,13 @@ library(reshape2)
 link <- "https://github.com/DACSS-Visual/tabular_bivar_numnum/raw/main/data/covidMA.rds"
 covidMA <- readRDS(url(link))
 
-# Aggregate data by month
+# Aggregate data by month (sum cases and deaths for each month)
 covidMA_monthly <- aggregate(data = covidMA, cbind(cases, deaths) ~ yearMonth, sum)
 
 # Convert yearMonth to Date format
 covidMA_monthly$yearMonth <- as.Date(covidMA_monthly$yearMonth)
 
-# Reshape data for ggplot compatibility
+# Reshape data for ggplot compatibility (long format for cases and deaths)
 covidMA_monthly_long <- melt(covidMA_monthly, 
                              variable.name = 'type',
                              value.name = 'value',
@@ -36,30 +36,36 @@ covidMA_monthly_long <- melt(covidMA_monthly,
 # Identify the worst month of the first wave (end of 2020)
 worst_first_wave <- as.Date("2020-12-01")
 
-# Updated Title and Subtitle
+# Identify the actual worst month based on highest case counts in the data
+worst_month <- covidMA_monthly$yearMonth[which.max(covidMA_monthly$cases)]
+
+# Updated Title, Subtitle, and Caption
 titleText <- "COVID-19 Case Spike and Declining Deaths in MA"
 sub_titleText <- "Data aggregated monthly (August 2020 to December 2021) for Massachusetts."
 captionText <- "Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting"
 
-# Generate the plot with corrected vertical line and annotation placement
+# Generate the plot with corrected vertical lines and annotations for both peaks
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
   
-  # Corrected vertical line outside aes()
+  # Vertical line and annotation for the first wave (Dec 2020)
   geom_vline(xintercept = as.numeric(worst_first_wave), linetype = "dashed", color = "black", size = 1) +
-  
-  # Corrected annotation placement
-  annotate("text", x = worst_first_wave, y = max(covidMA_monthly$value), 
+  annotate("text", x = worst_first_wave, y = max(covidMA_monthly$value) / 2, 
            label = "First Wave Peak", angle = 90, vjust = -0.5, size = 4) +
 
-  # Log transformation applied to Y-axis
+  # Vertical line and annotation for the worst month (Dec 2021)
+  geom_vline(xintercept = as.numeric(worst_month), linetype = "dotted", color = "red", size = 1) +
+  annotate("text", x = worst_month, y = max(covidMA_monthly$value), 
+           label = "Worst Month", angle = 90, vjust = -0.5, size = 4) +
+
+  # Log transformation applied to Y-axis for better scaling
   scale_y_log10(labels = scales::comma) + 
   
-  # Customizing color and scales
+  # Customizing the color and scales
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_color_manual(values = c("cases" = "blue", "deaths" = "red")) +
   
-  # Adding labels and captions with spacing adjustments
+  # Adding labels and captions
   labs(title = titleText, 
        subtitle = sub_titleText, 
        caption = captionText, 
@@ -67,7 +73,7 @@ covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color =
        y = "Count (Log Scale)", 
        color = "Data Type") +
 
-  # Adjusting theme for better title and caption spacing
+  # Adjusting the theme for better title and caption spacing
   theme_minimal() +
   theme(
     plot.title.position = "plot",  
@@ -83,5 +89,13 @@ saveRDS(covidLines, file = "covidLines.rds")
 
 
 
+
+
 ```
+
+
+
+
+
+
 
