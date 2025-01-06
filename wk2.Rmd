@@ -33,17 +33,24 @@ covidMA_monthly_long <- melt(covidMA_monthly,
                              value.name = 'value',
                              id.vars = 'yearMonth')
 
-# Convert again to ensure Date format consistency
-covidMA_monthly_long$yearMonth <- as.Date(covidMA_monthly_long$yearMonth)
+# Identify the month with the highest cases (worst month)
+worst_month <- as.Date(covidMA_monthly$yearMonth[which.max(covidMA_monthly$cases)])
 
-# Updated Title, Subtitle, and Caption
-titleText <- "How COVID-19 Cases Surged in Dec. 2020 While Deaths Declined in MA"
+# Title, Subtitle, and Caption Update
+titleText <- "COVID-19 Case Spike and Declining Deaths in MA (2020-21)"
 sub_titleText <- "Data aggregated monthly (August 2020 to December 2021) for Massachusetts."
 captionText <- "Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting"
 
-# Generate the plot with adjusted spacing for title and caption
+# Generate the plot with corrected vertical line and annotation placement
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
+  
+  # Corrected vertical line outside aes()
+  geom_vline(xintercept = as.numeric(worst_month), linetype = "dashed", color = "black", size = 1) +
+  
+  # Adding a label near the vertical line
+  annotate("text", x = worst_month, y = max(covidMA_monthly$cases), 
+           label = "Worst Month", angle = 90, vjust = -0.5, size = 4) +
 
   # Log transformation applied to Y-axis
   scale_y_log10(labels = scales::comma) + 
@@ -63,8 +70,8 @@ covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color =
   # Adjusting theme for better title and caption spacing
   theme_minimal() +
   theme(
-    plot.title.position = "plot",  # Expands title spacing
-    plot.caption = element_text(hjust = 0, size = 10),  # Prevent caption cutoff
+    plot.title.position = "plot",  # Adjusts title position for clarity
+    plot.caption = element_text(hjust = 0, size = 10),  # Prevents caption cutoff
     axis.text.x = element_text(angle = 90)
   )
 
