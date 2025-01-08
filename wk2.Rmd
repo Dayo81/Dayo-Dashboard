@@ -12,7 +12,6 @@ output:
 
 
 ```{r}
-
 # Load required libraries
 library(ggplot2)    # For plotting
 library(dplyr)      # For data manipulation
@@ -29,7 +28,7 @@ covidMA_monthly <- aggregate(data = covidMA, cbind(cases, deaths) ~ yearMonth, s
 # Convert yearMonth to Date format
 covidMA_monthly$yearMonth <- as.Date(covidMA_monthly$yearMonth)
 
-# Reshape data to long format for ggplot
+# Reshape data to long format for ggplot compatibility
 covidMA_monthly_long <- melt(covidMA_monthly, 
                              variable.name = 'type',
                              value.name = 'value',
@@ -38,31 +37,42 @@ covidMA_monthly_long <- melt(covidMA_monthly,
 # Identify the worst month for the first wave (December 2020)
 worst_first_wave <- as.Date("2020-12-01")
 
-# Calculate the death rate for the first wave based on January deaths and December cases
-dec_cases <- covidMA_monthly[covidMA_monthly$yearMonth == worst_first_wave, "cases"]
-jan_deaths <- covidMA_monthly[covidMA_monthly$yearMonth == as.Date("2021-01-01"), "deaths"]
-rate_first_wave <- round(100 * (jan_deaths / dec_cases), 2)
+# Calculate the death rate for the first wave
+rate_first_wave <- round(100 * (covidMA_monthly[covidMA_monthly$yearMonth == worst_first_wave, "deaths"] /
+                                covidMA_monthly[covidMA_monthly$yearMonth == worst_first_wave, "cases"]), 2)
 
-# Titles and captions for the plot
+# Titles and captions
 titleText <- "COVID-19 Case Spike and Declining Deaths in MA"
 sub_titleText <- "Data aggregated monthly (August 2020 to December 2021) for Massachusetts."
-captionText <- "Source: MA - Covid19 Dashboard | Death/Cases at Worst Month: 1.53%\nWebsite: https://www.mass.gov/info-details/covid-19-reporting"
+captionText <- paste("Source: MA - Covid19 Dashboard | Website: https://www.mass.gov/info-details/covid-19-reporting",
+                     "\nDeath/Cases at Worst Month:", rate_first_wave, "%")
 
-# Generate the plot with the updated caption and annotation removed
+# Generate the plot with the corrected annotation and a vertical line for the worst month
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
   
-  # Vertical line indicating the first wave peak in December 2020
+  # Vertical line for the first wave peak
   geom_vline(xintercept = as.numeric(worst_first_wave), linetype = "dashed", color = "black", size = 1.2) +
+  
+  # Adding the annotation for death rate near the worst month
+  annotate("text", 
+           x = worst_first_wave + 20,  # Slightly shifted right to avoid overlap
+           y = 1000,                   # Adjusted for better visibility
+           label = paste0("Death/Cases: ", rate_first_wave, "%"), 
+           angle = 0, 
+           vjust = -0.5, 
+           size = 5, 
+           fontface = "italic", 
+           color = "black") +
 
-  # Log transformation applied to Y-axis for better visibility of both data series
+  # Log transformation applied to Y-axis for better scale representation
   scale_y_log10(labels = scales::comma) + 
   
-  # Customizing the color and scales for better differentiation
+  # Customizing the color and scales
   scale_x_date(date_breaks = "1 month", date_labels = "%b-%Y") +
   scale_color_manual(values = c("cases" = "blue", "deaths" = "red")) +
   
-  # Adding plot titles, captions, and axis labels
+  # Adding labels and captions
   labs(title = titleText, 
        subtitle = sub_titleText, 
        caption = captionText, 
@@ -70,19 +80,20 @@ covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color =
        y = "Count (Log Scale)", 
        color = "Data Type") +
 
-  # Adjusting the theme for a cleaner look and better readability
+  # Adjusting the theme for better spacing and readability
   theme_minimal() +
   theme(
     plot.title.position = "plot",  
-    plot.caption = element_text(hjust = 0, size = 10, lineheight = 1.2),  
+    plot.caption = element_text(hjust = 0, size = 10),  
     axis.text.x = element_text(angle = 90)
   )
 
-# Print the updated plot
+# Print the plot explicitly for Flexdashboard rendering
 print(covidLines)
 
-# Save the updated plot for future use in the dashboard
+# Save the plot for future use in the dashboard
 saveRDS(covidLines, file = "covidLines.rds")
+
 
 
 
