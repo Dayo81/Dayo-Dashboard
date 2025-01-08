@@ -46,25 +46,14 @@ rate_first_wave <- round(100 * (jan_deaths / dec_cases), 2)
 # Titles and captions for the plot
 titleText <- "COVID-19 Case Spike and Declining Deaths in MA"
 sub_titleText <- "Data aggregated monthly (August 2020 to December 2021) for Massachusetts."
-captionText <- "Source: MA - Covid19 Dashboard\nWebsite: https://www.mass.gov/info-details/covid-19-reporting"
+captionText <- "Source: MA - Covid19 Dashboard | Death/Cases at Worst Month: 1.53%\nWebsite: https://www.mass.gov/info-details/covid-19-reporting"
 
-# Generate the plot with corrected annotation for the first wave
+# Generate the plot with the updated caption and annotation removed
 covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color = type)) +
   geom_line(size = 1) +
   
   # Vertical line indicating the first wave peak in December 2020
   geom_vline(xintercept = as.numeric(worst_first_wave), linetype = "dashed", color = "black", size = 1.2) +
-  
-  # Annotating the death rate for the first wave (adjusted for January deaths)
-  annotate("text", 
-           x = worst_first_wave + 20,  
-           y = 500,                  
-           label = paste0("Death Rate: ", rate_first_wave, "%"), 
-           angle = 0, 
-           vjust = -0.5, 
-           size = 5, 
-           fontface = "italic", 
-           color = "black") +
 
   # Log transformation applied to Y-axis for better visibility of both data series
   scale_y_log10(labels = scales::comma) + 
@@ -85,15 +74,16 @@ covidLines <- ggplot(covidMA_monthly_long, aes(x = yearMonth, y = value, color =
   theme_minimal() +
   theme(
     plot.title.position = "plot",  
-    plot.caption = element_text(hjust = 0, size = 10),  
+    plot.caption = element_text(hjust = 0, size = 10, lineheight = 1.2),  
     axis.text.x = element_text(angle = 90)
   )
 
-# Print the plot explicitly for Flexdashboard rendering
+# Print the updated plot
 print(covidLines)
 
-# Save the plot for future use in the dashboard
+# Save the updated plot for future use in the dashboard
 saveRDS(covidLines, file = "covidLines.rds")
+
 
 
 ```
