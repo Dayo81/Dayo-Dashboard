@@ -1,0 +1,72 @@
+---
+title: "Boston Contributions: An Interactive Map for Tender Types"
+subtitle: "Visualizing Boston's campaign contributions by ZIP code and tender type"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r}
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+
+install.packages("sf")
+install.packages("rio")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("leaflet")
+```
+
+```{r}
+# Load necessary libraries
+library(sf)
+library(rio)
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+
+```
+
+```{r}
+
+# Load required libraries
+library(ggplot2)
+library(patchwork)
+
+# Continuous Data Plot
+continuous_plot <- ggplot(data = subset(boston_map_filtered_combined, Visualization_Type == "Continuous")) +
+  geom_sf(aes(fill = Total_Amount)) +
+  scale_fill_viridis_c(option = "D", direction = -1, na.value = "gray80") +
+  facet_wrap(~`Tender Type Description`) +
+  theme_void() +
+  labs(title = "Continuous Contributions",
+       subtitle = "Boston Contributions by Tender Type",
+       fill = "Total Contributions")
+
+# Discretized Data Plot
+discretized_plot <- ggplot(data = subset(boston_map_filtered_combined, Visualization_Type == "Discretized")) +
+  geom_sf(aes(fill = Amount_Cat)) +
+  scale_fill_brewer(palette = "YlOrRd", na.value = "gray80") +
+  facet_wrap(~`Tender Type Description`) +
+  theme_void() +
+  labs(title = "Discretized Contributions",
+       subtitle = "Boston Contributions by Tender Type",
+       fill = "Contribution Levels")
+
+# Combine both plots with a source added
+continuous_plot + discretized_plot +
+  plot_annotation(
+    title = "Boston Contributions: Continuous vs Discretized",
+    subtitle = "Comparing Check and Credit Card Contributions",
+    caption = "Source: Boston Contributions Data - DACSS",
+    theme = theme(plot.caption = element_text(hjust = 0, size = 10))
+  )
+
+# ✅ Save the combined filtered map as an RDS file
+saveRDS(boston_map_filtered_combined, "boston_contributions_map_combined.rds")
+
+
+
+```
