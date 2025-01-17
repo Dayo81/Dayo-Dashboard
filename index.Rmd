@@ -33,7 +33,7 @@ readRDS("covidLines.rds")
 ### Worst scatterplot
 
 ```{r}
-readRDS("boston_contributions_map.rds")
+readRDS("boston_contributions_leaflet_map.rds")
 ```
 
 

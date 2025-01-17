@@ -3,7 +3,7 @@ title: "Boston Contributions: An Interactive Map for Tender Types"
 subtitle: "Visualizing Boston's campaign contributions by ZIP code and tender type"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
 runtime: shiny
 ---
@@ -17,56 +17,124 @@ install.packages("rio")
 install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("leaflet")
+install.packages("shinytest2")
+
+install.packages("patchwork")
+
+
 ```
 
 ```{r}
 # Load necessary libraries
-library(sf)
-library(rio)
-library(dplyr)
-library(ggplot2)
-library(leaflet)
 
+library(patchwork)
+library(shinytest2)
+library(rio)        # For data import
+library(sf)         # For handling spatial data
+library(dplyr)      # For data manipulation
+library(ggplot2)    # For static plotting
+library(viridis)    # For color palettes
+library(leaflet)    # For interactive maps
 ```
 
 ```{r}
 
-# Load required libraries
-library(ggplot2)
-library(patchwork)
 
-# Continuous Data Plot
-continuous_plot <- ggplot(data = subset(boston_map_filtered_combined, Visualization_Type == "Continuous")) +
-  geom_sf(aes(fill = Total_Amount)) +
-  scale_fill_viridis_c(option = "D", direction = -1, na.value = "gray80") +
-  facet_wrap(~`Tender Type Description`) +
-  theme_void() +
-  labs(title = "Continuous Contributions",
-       subtitle = "Boston Contributions by Tender Type",
-       fill = "Total Contributions")
 
-# Discretized Data Plot
-discretized_plot <- ggplot(data = subset(boston_map_filtered_combined, Visualization_Type == "Discretized")) +
-  geom_sf(aes(fill = Amount_Cat)) +
-  scale_fill_brewer(palette = "YlOrRd", na.value = "gray80") +
-  facet_wrap(~`Tender Type Description`) +
-  theme_void() +
-  labs(title = "Discretized Contributions",
-       subtitle = "Boston Contributions by Tender Type",
-       fill = "Contribution Levels")
+# Step 1: Load the Boston contributions data
+linkBoston <- "https://github.com/DACSS-Visual/SpatialData/raw/refs/heads/main/data/BostonContrib.xlsx"
+bostonCont <- rio::import(linkBoston)
 
-# Combine both plots with a source added
-continuous_plot + discretized_plot +
-  plot_annotation(
-    title = "Boston Contributions: Continuous vs Discretized",
-    subtitle = "Comparing Check and Credit Card Contributions",
-    caption = "Source: Boston Contributions Data - DACSS",
-    theme = theme(plot.caption = element_text(hjust = 0, size = 10))
+# Step 2: Load the Boston ZIP codes map
+linkZips <- "https://raw.githubusercontent.com/DACSS-Visual/SpatialData/refs/heads/main/data/zip_codes.json"
+bostonZips <- sf::read_sf(linkZips)
+
+# Step 3: Aggregate contributions by ZIP and Tender Type
+aggregated_data <- bostonCont %>%
+  group_by(Zip, `Tender Type Description`) %>%
+  summarise(
+    total_contribution = sum(Amount, na.rm = TRUE),
+    mean_contribution = mean(Amount, na.rm = TRUE),
+    .groups = "drop"
   )
 
-# ✅ Save the combined filtered map as an RDS file
-saveRDS(boston_map_filtered_combined, "boston_contributions_map_combined.rds")
+# Step 4: Filter for two tender types: Check and Credit Card
+selected_data <- aggregated_data %>%
+  filter(`Tender Type Description` %in% c("Check", "Credit Card"))
 
+# Step 5: Prepare map data for merging
+selected_data$Zip <- as.character(selected_data$Zip)
+bostonZips$ZIP5 <- as.character(bostonZips$ZIP5)
+
+# Step 6: Merge aggregated data with the ZIP code map
+merged_map <- bostonZips %>%
+  left_join(selected_data, by = c("ZIP5" = "Zip"))
+
+# Transform spatial data for static and interactive maps
+static_map <- st_transform(merged_map, crs = 3857)  # Web Mercator for static map
+interactive_map <- st_transform(merged_map, crs = 4326)  # WGS84 for interactive map
+
+# Identify the ZIP code with the highest contribution for static map
+highest_zip_static <- static_map %>%
+  filter(total_contribution == max(total_contribution, na.rm = TRUE))
+
+# Step 7: Create the static choropleth map
+choropleth_map <- ggplot(static_map) +
+  geom_sf(aes(fill = total_contribution), color = "white", size = 0.2) +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
+  labs(
+    title = "Comparing Contributions by Check and Credit Card Across Boston ZIP Codes",
+    subtitle = "This map highlights total contributions by tender type for the Boston area, aggregated from campaign data.",
+    caption = "Source: Boston Campaign Contributions Dataset (https://data.boston.gov)",
+    fill = "Total Contribution (USD)"
+  ) +
+  facet_wrap(~`Tender Type Description`, ncol = 1) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    plot.caption = element_text(size = 10, face = "italic"),
+    strip.text = element_text(size = 12)
+  ) +
+  geom_sf_text(data = highest_zip_static, aes(label = ZIP5), color = "red", size = 3, nudge_y = 0.01)
+
+# Display the static map
+print(choropleth_map)
+
+# Step 8: Create an interactive map using leaflet
+# Prepare palette and popups for interactive map
+palette <- colorNumeric("YlOrRd", domain = interactive_map$total_contribution, na.color = "transparent")
+popup_labels <- paste(
+  "ZIP:", interactive_map$ZIP5,
+  "<br>Total Contribution: $", round(interactive_map$total_contribution, 2),
+  "<br>Tender Type:", interactive_map$`Tender Type Description`
+)
+
+# Create the interactive map
+leaflet_map <- leaflet(interactive_map) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~palette(total_contribution),
+    fillOpacity = 0.8,
+    color = "white",
+    weight = 1,
+    popup = popup_labels
+  ) %>%
+  addLegend(
+    position = "bottomright",
+    pal = palette,
+    values = ~total_contribution,
+    title = "Total Contribution (USD)"
+  )
+
+# Display the interactive map
+leaflet_map
+
+# Save the interactive map as an RDS file
+saveRDS(leaflet_map, file = "boston_contributions_leaflet_map.rds")
 
 
 ```
+
+
