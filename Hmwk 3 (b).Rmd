@@ -43,7 +43,6 @@ library(patchwork)
 ```{r}
 
 
-
 # Step 1: Reload contribution data
 linkBoston <- "https://github.com/DACSS-Visual/SpatialData/raw/refs/heads/main/data/BostonContrib.xlsx"
 bostonCont <- rio::import(linkBoston)
@@ -69,62 +68,55 @@ bostonZips$ZIP5 <- as.character(bostonZips$ZIP5)
 merged_map <- bostonZips %>%
   left_join(selected_data, by = c("ZIP5" = "Zip"))
 
-# Step 6: Filter for each tender type
-check_map <- merged_map %>% filter(`Tender Type Description` == "Check")
-credit_card_map <- merged_map %>% filter(`Tender Type Description` == "Credit Card")
+# Step 6: Prepare data for faceted map
+combined_map <- merged_map %>%
+  filter(`Tender Type Description` %in% c("Check", "Credit Card")) %>%
+  mutate(Tender_Type = `Tender Type Description`)
 
-# Step 7: Create Static Map for 'Check'
-# Map for 'Check'
-ggplot_check <- ggplot(data = check_map) +
+# Determine the range of mean contributions for consistent scaling
+min_contribution <- min(combined_map$mean_contribution, na.rm = TRUE)
+max_contribution <- max(combined_map$mean_contribution, na.rm = TRUE)
+
+# Step 7: Create the faceted plot
+faceted_map <- ggplot(data = combined_map) +
   geom_sf(aes(fill = mean_contribution), color = "white", size = 0.2) +
-  scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    direction = 1,
+    na.value = "grey80",
+    limits = c(min_contribution, max_contribution)  # Ensure consistent scaling
+  ) +
   labs(
-    title = "Mean Contribution by Check Across Boston ZIP Codes",
-    subtitle = "Aggregated contributions by 'Check'",
+    title = "Comparison of Mean Contributions by Tender Type Across Boston ZIP Codes",
     fill = "Mean Contribution (USD)",
-    caption = NULL
+    subtitle = "Faceted by Tender Type",
+    caption = "Source: Boston Campaign Contributions Dataset"
   ) +
   theme_minimal() +
+  facet_wrap(~Tender_Type, ncol = 2) +
   theme(
-    plot.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold"),
     plot.subtitle = element_text(size = 12),
-    plot.caption = element_text(size = 10, face = "italic")
+    plot.caption = element_text(size = 10, face = "italic"),
+    strip.text = element_text(size = 12),
+    legend.position = "bottom"  # Move legend below the map for better alignment
   )
 
-# Map for 'Credit Card'
-ggplot_credit_card <- ggplot(data = credit_card_map) +
-  geom_sf(aes(fill = mean_contribution), color = "white", size = 0.2) +
-  scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
-  labs(
-    title = "Mean Contribution by Credit Card Across Boston ZIP Codes",
-    subtitle = "Aggregated contributions by 'Credit Card'",
-    fill = "Mean Contribution (USD)",
-    caption = NULL
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 12),
-    plot.caption = element_text(size = 10, face = "italic")
-  )
+# Step 8: Save the faceted map
+ggsave(
+  filename = "faceted_map.png",
+  plot = faceted_map,
+  width = 14, 
+  height = 8,
+  dpi = 300  # High resolution for clarity
+)
 
-# Combine the maps side by side
-combined_maps <- ggplot_check + ggplot_credit_card +
-  plot_layout(ncol = 2) +
-  plot_annotation(
-    title = "Comparison of Mean Contributions by Tender Type",
-    caption = "Data Source: Boston Campaign Contributions Dataset"
-  )
-
-# Save the combined map
-ggsave("combined_tender_type_maps_dashboard.png", combined_maps, width = 14, height = 8)
-
-# Display the combined map
-combined_maps
+# Step 9: Display the faceted map
+print(faceted_map)
 
 
+saveRDS(faceted_map, file = "faceted_map.rds")
 
-saveRDS(combined_maps, file = "combined_tender_type_maps.rds")
 
 
 
@@ -135,6 +127,7 @@ saveRDS(combined_maps, file = "combined_tender_type_maps.rds")
 
 
 ```
+
 
 
 
