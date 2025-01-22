@@ -40,7 +40,7 @@ readRDS("boston_contributions_leaflet_map_mean.rds")
 ### Worst map
 
 ```{r}
-#readRDS("del4Draft.rds")
+readRDS("boston_contributions_leaflet_sync_maps.rds")
 ```
 
 
