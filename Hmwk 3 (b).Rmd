@@ -1,12 +1,23 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Boston Campaign Contributions Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
 ---
 
+Column {data-width=500}
+
+### Check Contributions
+```{r, echo=FALSE}
+leaflet_check
+
+leaflet_credit
 
 
 
-```{r}
+
 install.packages("sf")
 
 install.packages("dplyr")
@@ -24,10 +35,14 @@ library(sf)
 library(dplyr)
 library(leaflet)
 library(leafsync)
-
+library(ggplot2)
+library(rio)
+library(patchwork)
 ```
 
 ```{r}
+
+
 
 # Step 1: Reload contribution data
 linkBoston <- "https://github.com/DACSS-Visual/SpatialData/raw/refs/heads/main/data/BostonContrib.xlsx"
@@ -50,86 +65,76 @@ bostonZips <- sf::read_sf(linkZips)
 # Step 4: Prepare ZIP code column
 bostonZips$ZIP5 <- as.character(bostonZips$ZIP5)
 
-# Step 5: Merge and transform map
-interactive_map <- bostonZips %>%
-  left_join(selected_data, by = c("ZIP5" = "Zip")) %>%
-  st_transform(crs = 4326)  # WGS84 for Leaflet
+# Step 5: Merge map data with contribution data
+merged_map <- bostonZips %>%
+  left_join(selected_data, by = c("ZIP5" = "Zip"))
 
-# Step 6: Filter for 'Check' and 'Credit Card' tender types
-check_map <- interactive_map %>%
-  filter(`Tender Type Description` == "Check")
-credit_card_map <- interactive_map %>%
-  filter(`Tender Type Description` == "Credit Card")
+# Step 6: Filter for each tender type
+check_map <- merged_map %>% filter(`Tender Type Description` == "Check")
+credit_card_map <- merged_map %>% filter(`Tender Type Description` == "Credit Card")
 
-# Step 7: Define common color scale
-common_domain <- range(c(check_map$mean_contribution, credit_card_map$mean_contribution), na.rm = TRUE)
-palette_check <- colorNumeric("YlOrRd", domain = common_domain, na.color = "transparent")
-palette_credit <- colorNumeric("YlOrRd", domain = common_domain, na.color = "transparent")
-
-# Step 8: Create Leaflet map for 'Check'
-leaflet_check <- leaflet(check_map) %>%
-  addTiles() %>%
-  addPolygons(
-    fillColor = ~palette_check(mean_contribution),
-    fillOpacity = 0.8,
-    color = "white",
-    weight = 1,
-    popup = paste0(
-      "ZIP: ", check_map$ZIP5,
-      "<br>Mean Contribution: $", round(check_map$mean_contribution, 2)
-    )
-  ) %>%
-  addLegend(
-    position = "bottomright",
-    pal = palette_check,
-    values = ~mean_contribution,
-    title = "Mean Contribution (Check)"
+# Step 7: Create Static Map for 'Check'
+# Map for 'Check'
+ggplot_check <- ggplot(data = check_map) +
+  geom_sf(aes(fill = mean_contribution), color = "white", size = 0.2) +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
+  labs(
+    title = "Mean Contribution by Check Across Boston ZIP Codes",
+    subtitle = "Aggregated contributions by 'Check'",
+    fill = "Mean Contribution (USD)",
+    caption = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    plot.caption = element_text(size = 10, face = "italic")
   )
 
-# Step 9: Create Leaflet map for 'Credit Card'
-leaflet_credit <- leaflet(credit_card_map) %>%
-  addTiles() %>%
-  addPolygons(
-    fillColor = ~palette_credit(mean_contribution),
-    fillOpacity = 0.8,
-    color = "white",
-    weight = 1,
-    popup = paste0(
-      "ZIP: ", credit_card_map$ZIP5,
-      "<br>Mean Contribution: $", round(credit_card_map$mean_contribution, 2)
-    )
-  ) %>%
-  addLegend(
-    position = "bottomright",
-    pal = palette_credit,
-    values = ~mean_contribution,
-    title = "Mean Contribution (Credit Card)"
+# Map for 'Credit Card'
+ggplot_credit_card <- ggplot(data = credit_card_map) +
+  geom_sf(aes(fill = mean_contribution), color = "white", size = 0.2) +
+  scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
+  labs(
+    title = "Mean Contribution by Credit Card Across Boston ZIP Codes",
+    subtitle = "Aggregated contributions by 'Credit Card'",
+    fill = "Mean Contribution (USD)",
+    caption = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    plot.caption = element_text(size = 10, face = "italic")
   )
 
-# Step 10: Synchronize maps
-if (!requireNamespace("leafsync", quietly = TRUE)) {
-  install.packages("leafsync")
-}
-library(leafsync)
+# Combine the maps side by side
+combined_maps <- ggplot_check + ggplot_credit_card +
+  plot_layout(ncol = 2) +
+  plot_annotation(
+    title = "Comparison of Mean Contributions by Tender Type",
+    caption = "Data Source: Boston Campaign Contributions Dataset"
+  )
 
-# Synchronize the two maps
-sync_maps <- leafsync::sync(leaflet_check, leaflet_credit)
+# Save the combined map
+ggsave("combined_tender_type_maps_dashboard.png", combined_maps, width = 14, height = 8)
 
-# Display the synchronized maps
-sync_maps
+# Display the combined map
+combined_maps
 
-# Save the synchronized maps
-saveRDS(sync_maps, file = "boston_contributions_leaflet_sync_maps.rds")
+
+
+saveRDS(combined_maps, file = "combined_tender_type_maps.rds")
+
+
+
+
+
+
 
 
 
 ```
 
-
-```{r}
-# Save synchronized maps as an RDS file
-saveRDS(sync_maps, file = "synchronized_maps.rds")
-
-```
 
 
