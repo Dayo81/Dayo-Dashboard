@@ -42,8 +42,6 @@ library(flexdashboard)
 
 ```{r}
 
-
-
 # Step 1: Load the Boston contributions data
 linkBoston <- "https://github.com/DACSS-Visual/SpatialData/raw/refs/heads/main/data/BostonContrib.xlsx"
 bostonCont <- rio::import(linkBoston)
@@ -81,15 +79,14 @@ highest_zip_static <- static_map %>%
   filter(mean_contribution == max(mean_contribution, na.rm = TRUE))
 
 # Step 7: Create the static choropleth map
-# Corrected Static Map Code for Average Contributions
 choropleth_map <- ggplot(static_map) +
   geom_sf(aes(fill = mean_contribution), color = "white", size = 0.2) +
   scale_fill_distiller(palette = "YlOrRd", direction = 1, na.value = "grey80") +
   labs(
-    title = "Comparing Average Contributions by Check and Credit Card Across Boston ZIP Codes",
-    subtitle = "This map highlights average contributions by tender type for the Boston area, aggregated from campaign data.",
-    caption = "Source: Boston Campaign Contributions Dataset (https://data.boston.gov)",
-    fill = "Average Contribution (USD)"  # Correct legend title
+    title = "Credit Card Contributions Are Higher in the City Center Compared to Checks",
+    subtitle = "Boston ZIP Codes, Aggregated Contributions in 2023",
+    caption = "Source: Boston Campaign Contributions Dataset",
+    fill = "Average Contribution (USD)"
   ) +
   facet_wrap(~`Tender Type Description`, ncol = 1) +
   theme_minimal() +
@@ -98,16 +95,16 @@ choropleth_map <- ggplot(static_map) +
     plot.title = element_text(size = 16, face = "bold"),
     plot.subtitle = element_text(size = 12),
     plot.caption = element_text(size = 10, face = "italic"),
-    strip.text = element_text(size = 12)
+    strip.text = element_text(size = 12),
+    axis.text = element_blank(),  # Remove axis text
+    axis.ticks = element_blank()  # Remove axis ticks
   ) +
   geom_sf_text(data = highest_zip_static, aes(label = ZIP5), color = "red", size = 3, nudge_y = 0.01)
 
-# Display the corrected static map
+# Display the static map
 print(choropleth_map)
 
-
-
-# Step 8: Create an interactive map using leaflet
+# Step 8: Create an interactive map using Leaflet
 # Correct palette for average contributions
 palette <- colorNumeric("YlOrRd", domain = interactive_map$mean_contribution, na.color = "transparent")
 
@@ -118,11 +115,11 @@ popup_labels <- paste(
   "<br>Tender Type:", interactive_map$`Tender Type Description`
 )
 
-# Create the leaflet map with corrected legend and variable
+# Create the interactive map
 leaflet_map <- leaflet(interactive_map) %>%
   addTiles() %>%
   addPolygons(
-    fillColor = ~palette(mean_contribution),  # Ensure 'mean_contribution' is used
+    fillColor = ~palette(mean_contribution),
     fillOpacity = 0.8,
     color = "white",
     weight = 1,
@@ -131,12 +128,13 @@ leaflet_map <- leaflet(interactive_map) %>%
   addLegend(
     position = "bottomright",
     pal = palette,
-    values = ~mean_contribution,  # Use 'mean_contribution'
-    title = "Average Contribution (USD)"  # Correct legend title
+    values = ~mean_contribution,
+    title = "Average Contribution (USD)"
   )
 
-# Display the corrected interactive map
+# Display the interactive map
 leaflet_map
+
 
 
 saveRDS(leaflet_map, file = "boston_contributions_leaflet_map_mean.rds")

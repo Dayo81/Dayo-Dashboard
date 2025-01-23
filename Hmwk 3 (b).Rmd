@@ -42,7 +42,6 @@ library(patchwork)
 
 ```{r}
 
-
 # Step 1: Reload contribution data
 linkBoston <- "https://github.com/DACSS-Visual/SpatialData/raw/refs/heads/main/data/BostonContrib.xlsx"
 bostonCont <- rio::import(linkBoston)
@@ -84,43 +83,42 @@ faceted_map <- ggplot(data = combined_map) +
     palette = "YlOrRd",
     direction = 1,
     na.value = "grey80",
-    limits = c(min_contribution, max_contribution)  # Ensure consistent scaling
+    limits = c(min_contribution, max_contribution)
   ) +
   labs(
-    title = "Comparison of Mean Contributions by Tender Type Across Boston ZIP Codes",
+    title = "Credit Card Contributions Are Concentrated\nin the City Center, While Checks Are Spread\nAcross Boston",
     fill = "Mean Contribution (USD)",
-    subtitle = "Faceted by Tender Type",
+    subtitle = "Boston ZIP Codes, Aggregated Contributions in 2023",
     caption = "Source: Boston Campaign Contributions Dataset"
   ) +
   theme_minimal() +
   facet_wrap(~Tender_Type, ncol = 2) +
   theme(
-    plot.title = element_text(size = 16, face = "bold"),
-    plot.subtitle = element_text(size = 12),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
     plot.caption = element_text(size = 10, face = "italic"),
     strip.text = element_text(size = 12),
-    legend.position = "bottom"  # Move legend below the map for better alignment
+    legend.position = "bottom",
+    plot.margin = margin(t = 50, r = 10, b = 10, l = 10),
+    axis.text = element_blank(),  # Remove axis text
+    axis.ticks = element_blank()  # Remove axis ticks
   )
-
-# Step 8: Save the faceted map
+# Save the updated map with cleaned axes
 ggsave(
-  filename = "faceted_map.png",
+  filename = "faceted_map_cleaned_axes.png",
   plot = faceted_map,
   width = 14, 
   height = 8,
-  dpi = 300  # High resolution for clarity
+  dpi = 300
 )
 
-# Step 9: Display the faceted map
+
+
+# Display the faceted map
 print(faceted_map)
 
-
-saveRDS(faceted_map, file = "faceted_map.rds")
-
-
-
-
-
+# Save the faceted map as an RDS file
+saveRDS(faceted_map, file = "faceted_map_final_adjusted.rds")
 
 
 
@@ -130,4 +128,5 @@ saveRDS(faceted_map, file = "faceted_map.rds")
 
 
 
+`
 
